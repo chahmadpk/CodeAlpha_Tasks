@@ -1,0 +1,201 @@
+package student.grade.tracker;
+
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
+import java.awt.*;
+import java.util.ArrayList;
+
+// Student class
+class Student {
+    String name;
+    String rollNo;
+    double percentage;
+
+    Student(String name, String rollNo, double percentage) {
+        this.name = name;
+        this.rollNo = rollNo;
+        this.percentage = percentage;
+    }
+
+    // convert percentage into grade
+    String getGrade() {
+        if (percentage >= 80) return "A";
+        else if (percentage >= 60) return "B";
+        else if (percentage >= 40) return "C";
+        else return "Fail";
+    }
+}
+
+public class StudentGradeTracker extends JFrame {
+
+    private JTextField nameField, rollField, percentageField;
+    private JTable table;
+    private DefaultTableModel model;
+    private ArrayList<Student> students;
+
+    public StudentGradeTracker() {
+
+        students = new ArrayList<>();
+
+        setTitle("Student Grade Tracker");
+        setSize(700, 500);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        // ---------- INPUT PANEL ----------
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+
+        // Name
+        nameField = new JTextField();
+        nameField.setBorder(BorderFactory.createTitledBorder("Student Name"));
+
+        // Roll No
+        rollField = new JTextField();
+        rollField.setBorder(BorderFactory.createTitledBorder("Roll Number"));
+
+        // Percentage input (instead of grade)
+        percentageField = new JTextField();
+        percentageField.setBorder(BorderFactory.createTitledBorder("Percentage (%)"));
+
+        // Buttons in one row
+        JPanel buttonPanel = new JPanel(new FlowLayout());
+
+        JButton addButton = new JButton("Add");
+        JButton deleteButton = new JButton("Delete");
+        JButton reportButton = new JButton("Summary");
+
+        buttonPanel.add(addButton);
+        buttonPanel.add(deleteButton);
+        buttonPanel.add(reportButton);
+
+        mainPanel.add(nameField);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(rollField);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(percentageField);
+        mainPanel.add(Box.createVerticalStrut(10));
+        mainPanel.add(buttonPanel);
+
+        add(mainPanel, BorderLayout.NORTH);
+
+        // ---------- TABLE ----------
+        String[] columns = {"Name", "Roll No", "Percentage", "Grade"};
+        model = new DefaultTableModel(columns, 0);
+
+        table = new JTable(model);
+        add(new JScrollPane(table), BorderLayout.CENTER);
+
+        // ---------- BUTTON ACTIONS ----------
+        addButton.addActionListener(e -> addStudent());
+        deleteButton.addActionListener(e -> deleteStudent());
+        reportButton.addActionListener(e -> showSummary());
+    }
+
+    // Add student
+    private void addStudent() {
+        String name = nameField.getText();
+        String roll = rollField.getText();
+        String percText = percentageField.getText();
+
+        if (name.isEmpty() || roll.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter name and roll number.");
+            return;
+        }
+
+        // prevent duplicate roll numbers
+        for (Student s : students) {
+            if (s.rollNo.equalsIgnoreCase(roll)) {
+                JOptionPane.showMessageDialog(this, "Roll number already exists.");
+                return;
+            }
+        }
+
+        try {
+            double percentage = Double.parseDouble(percText);
+
+            Student s = new Student(name, roll, percentage);
+            students.add(s);
+
+            // add row to table
+            model.addRow(new Object[]{
+                    s.name,
+                    s.rollNo,
+                    s.percentage,
+                    s.getGrade()
+            });
+
+            nameField.setText("");
+            rollField.setText("");
+            percentageField.setText("");
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Enter valid percentage.");
+        }
+    }
+
+    // Delete student using name + roll
+    private void deleteStudent() {
+        String name = nameField.getText();
+        String roll = rollField.getText();
+
+        if (name.isEmpty() || roll.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Enter name and roll number.");
+            return;
+        }
+
+        boolean found = false;
+
+        for (int i = 0; i < students.size(); i++) {
+            Student s = students.get(i);
+
+            if (s.name.equalsIgnoreCase(name) && s.rollNo.equalsIgnoreCase(roll)) {
+                students.remove(i);
+                model.removeRow(i); // remove from table also
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            JOptionPane.showMessageDialog(this, "Student not found.");
+        }
+
+        nameField.setText("");
+        rollField.setText("");
+    }
+
+    // Show summary (average, highest, lowest)
+    private void showSummary() {
+
+        if (students.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "No data available.");
+            return;
+        }
+
+        double total = 0;
+        double highest = students.get(0).percentage;
+        double lowest = students.get(0).percentage;
+
+        for (Student s : students) {
+            total += s.percentage;
+
+            if (s.percentage > highest) highest = s.percentage;
+            if (s.percentage < lowest) lowest = s.percentage;
+        }
+
+        double avg = total / students.size();
+
+        JOptionPane.showMessageDialog(this,
+                "Average: " + avg +
+                "\nHighest: " + highest +
+                "\nLowest: " + lowest
+        );
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
+            new StudentGradeTracker().setVisible(true);
+        });
+    }
+}
